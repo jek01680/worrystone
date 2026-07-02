@@ -7,7 +7,7 @@ struct StoneSceneView: UIViewRepresentable {
 
     let stoneType: StoneType
     @Binding var rubIntensity: Double
-    var onRub: ((Double) -> Void)?   // passes pan distance
+    var onRub: ((Double) -> Void)?
 
     func makeUIView(context: Context) -> SCNView {
         let view = SCNView(frame: .zero)
@@ -71,7 +71,6 @@ struct StoneSceneView: UIViewRepresentable {
                 setSparkle(active: true, on: stone)
 
             case .changed:
-                // Rotate stone to follow finger — feels like rolling the stone
                 stone.eulerAngles.x += Float(t.y) * 0.012
                 stone.eulerAngles.y += Float(t.x) * 0.012
 
@@ -91,13 +90,15 @@ struct StoneSceneView: UIViewRepresentable {
         func applyPolish(intensity: Double) {
             lastIntensity = intensity
             guard let view = scnView,
-                  let stone = view.scene?.rootNode.childNode(withName: "stone", recursively: false),
-                  let mat   = stone.geometry?.firstMaterial
+                  let stone = view.scene?.rootNode.childNode(withName: "stone", recursively: false)
             else { return }
 
             SCNTransaction.begin()
             SCNTransaction.animationDuration = 0.4
-            mat.roughness.contents = roughness(for: intensity)
+            stone.enumerateChildNodes { node, _ in
+                node.geometry?.firstMaterial?.roughness.contents = roughness(for: intensity)
+            }
+            stone.geometry?.firstMaterial?.roughness.contents = roughness(for: intensity)
             SCNTransaction.commit()
 
             let ambient = stoneType.maxAmbientSparkle * CGFloat(intensity)
@@ -141,81 +142,95 @@ private final class StoneScene: SCNScene {
 
     // MARK: Stone node
     private func setupStone(_ stone: StoneType) {
-        let sphere = SCNSphere(radius: 1.0)
-        sphere.segmentCount = 72
+        let node = SCNNode()
+        node.name = "stone"
 
-        let node = SCNNode(geometry: sphere)
-        node.name  = "stone"
-        node.scale = stone.sceneScale
-
-        // PBR material
-        let mat = SCNMaterial()
-        mat.lightingModel       = .physicallyBased
-        mat.diffuse.contents    = stone.baseColor
-        mat.metalness.contents  = stone.metalness
-        mat.roughness.contents  = stone.initialRoughness
-        mat.isDoubleSided       = stone.isTranslucent
-
-        if stone.isTranslucent {
-            mat.transparency            = 0.18
-            mat.transparencyMode        = .dualLayer
-            mat.blendMode               = .alpha
+        if let url = Bundle.main.url(forResource: "Asset 1", withExtension: "usdz"),
+           let loaded = try? SCNScene(url: url, options: nil) {
+            for child in loaded.rootNode.childNodes {
+                node.addChildNode(child)
+            }
+            let mat = makeMaterial(for: stone)
+            node.enumerateChildNodes { n, _ in
+                if n.geometry != nil {
+                    n.geometry?.materials = [mat]
+                }
+            }
+        } else {
+            // Fallback sphere if USDZ fails to load
+            let sphere = SCNSphere(radius: 1.0)
+            sphere.segmentCount = 72
+            sphere.firstMaterial = makeMaterial(for: stone)
+            node.geometry = sphere
+            node.scale = SCNVector3(1.35, 0.72, 1.08)
         }
 
-        sphere.firstMaterial = mat
         rootNode.addChildNode(node)
 
-        // Gentle floating animation
         let up   = SCNAction.moveBy(x: 0, y: 0.05, z: 0, duration: 2.8).eased(.easeInEaseOut)
         let down = SCNAction.moveBy(x: 0, y: -0.05, z: 0, duration: 2.8).eased(.easeInEaseOut)
         node.runAction(.repeatForever(.sequence([up, down])))
 
-        // Idle slow rotation
         let rotate = SCNAction.repeatForever(.rotateBy(x: 0, y: .pi * 2, z: 0, duration: 22))
         node.runAction(rotate, forKey: "idleRotate")
 
-        // Sparkle particle system
         node.addParticleSystem(makeSparkle(for: stone))
+    }
+
+    // MARK: Material
+    private func makeMaterial(for stone: StoneType) -> SCNMaterial {
+        let mat = SCNMaterial()
+        mat.lightingModel      = .physicallyBased
+        mat.diffuse.contents   = stone.baseColor
+        mat.metalness.contents = stone.metalness
+        mat.roughness.contents = stone.initialRoughness
+        mat.isDoubleSided      = stone.isTranslucent
+
+        if stone.isTranslucent {
+            mat.transparency     = stone.transparency
+            mat.transparencyMode = .dualLayer
+            mat.blendMode        = .alpha
+        }
+
+        return mat
     }
 
     // MARK: Particle system
     private func makeSparkle(for stone: StoneType) -> SCNParticleSystem {
         let ps = SCNParticleSystem()
-        ps.birthRate                = 0
-        ps.birthRateVariation       = 0
-        ps.emitterShape             = SCNSphere(radius: 1.05)
-        ps.particleLifeSpan         = 0.7
+        ps.birthRate                 = 0
+        ps.birthRateVariation        = 0
+        ps.emitterShape              = SCNSphere(radius: 1.05)
+        ps.particleLifeSpan          = 0.7
         ps.particleLifeSpanVariation = 0.3
-        ps.particleSize             = 0.05
-        ps.particleSizeVariation    = 0.02
-        ps.particleColor            = stone.glowColor
-        ps.particleColorVariation   = SCNVector4(0.15, 0.15, 0.15, 0)
-        ps.blendMode                = .additive
-        ps.isAffectedByGravity      = false
+        ps.particleSize              = 0.05
+        ps.particleSizeVariation     = 0.02
+        ps.particleColor             = stone.glowColor
+        ps.particleColorVariation    = SCNVector4(0.15, 0.15, 0.15, 0)
+        ps.blendMode                 = .additive
+        ps.isAffectedByGravity       = false
         ps.isAffectedByPhysicsFields = false
-        ps.particleVelocity         = 0.25
+        ps.particleVelocity          = 0.25
         ps.particleVelocityVariation = 0.15
-        ps.loops                    = true
-        ps.speedFactor              = 1.0
+        ps.loops                     = true
+        ps.speedFactor               = 1.0
         return ps
     }
 
     // MARK: Lighting
     private func setupLighting(_ stone: StoneType) {
-        // Key light (warm spot from upper-right)
-        let key       = SCNNode()
-        key.light     = SCNLight()
-        key.light!.type      = .spot
-        key.light!.intensity = 900
-        key.light!.color     = UIColor(white: 1.0, alpha: 1.0)
+        let key           = SCNNode()
+        key.light         = SCNLight()
+        key.light!.type         = .spot
+        key.light!.intensity    = 900
+        key.light!.color        = UIColor(white: 1.0, alpha: 1.0)
         key.light!.spotInnerAngle = 25
         key.light!.spotOuterAngle = 55
-        key.light!.castsShadow    = false
-        key.position  = SCNVector3(3.5, 5, 5)
+        key.light!.castsShadow  = false
+        key.position      = SCNVector3(3.5, 5, 5)
         key.look(at: .init(0, 0, 0))
         rootNode.addChildNode(key)
 
-        // Fill / ambient
         let fill           = SCNNode()
         fill.light         = SCNLight()
         fill.light!.type   = .ambient
@@ -225,7 +240,6 @@ private final class StoneScene: SCNScene {
             : UIColor(white: 0.88, alpha: 1.0)
         rootNode.addChildNode(fill)
 
-        // Rim / back light gives that 3-D pop
         let rim           = SCNNode()
         rim.light         = SCNLight()
         rim.light!.type   = .directional
@@ -240,9 +254,9 @@ private final class StoneScene: SCNScene {
     private func setupCamera() {
         let cam           = SCNNode()
         cam.camera        = SCNCamera()
-        cam.camera!.fieldOfView     = 38
-        cam.camera!.zNear           = 0.1
-        cam.camera!.zFar            = 50
+        cam.camera!.fieldOfView = 38
+        cam.camera!.zNear       = 0.1
+        cam.camera!.zFar        = 50
         cam.position      = SCNVector3(0, 0, 5.2)
         rootNode.addChildNode(cam)
     }

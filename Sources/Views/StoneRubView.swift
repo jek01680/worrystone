@@ -19,8 +19,8 @@ struct StoneRubView: View {
             }
         }
         .confirmationDialog("워리스톤", isPresented: $showMenu, titleVisibility: .visible) {
-            Button("새 돌 뽑기 (광고 보기)") {
-                // TODO: present rewarded ad, then call state.resetForReroll()
+            Button("새 돌 뽑기") {
+                // TODO: show rewarded ad before calling resetForReroll()
                 state.resetForReroll()
             }
             Button("취소", role: .cancel) {}
