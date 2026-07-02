@@ -197,7 +197,6 @@ private final class StoneScene: SCNScene {
         ps.particleVelocityVariation = 0.15
         ps.loops                    = true
         ps.speedFactor              = 1.0
-        ps.name                     = "sparkle"
         return ps
     }
 
