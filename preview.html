@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>워리스톤 — Preview</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: radial-gradient(ellipse at center, #1a1830 0%, #08070f 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  overflow: hidden;
+}
+
+.label {
+  color: rgba(255,255,255,0.25);
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+/* ── Phone frame ── */
+.phone {
+  width: 393px;
+  height: 852px;
+  border-radius: 55px;
+  background: #0f0f0f;
+  padding: 14px;
+  box-shadow:
+    0 0 0 1px #2a2a2a,
+    0 40px 100px rgba(0,0,0,0.85),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.screen {
+  width: 100%;
+  height: 100%;
+  border-radius: 44px;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+
+.island {
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 34px;
+  background: #000;
+  border-radius: 18px;
+  z-index: 100;
+}
+
+/* ── App views ── */
+.view {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.55s ease;
+}
+
+/* ════════════════════════════════════════
+   UNBOXING
+════════════════════════════════════════ */
+#v-unbox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 72px 0 64px;
+  background: linear-gradient(160deg, #1c1a30, #0d0c1a);
+}
+
+#stars { position:absolute; inset:0; pointer-events:none; }
+
+.unbox-title { text-align:center; z-index:1; }
+.unbox-title h2 {
+  font-size:22px; font-weight:300;
+  color:rgba(255,255,255,0.9); letter-spacing:-.3px;
+}
+.unbox-title p {
+  margin-top:8px; font-size:14px;
+  color:rgba(255,255,255,0.38);
+  animation: pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:.38} 50%{opacity:.65} }
+
+.box-area {
+  z-index:1; cursor:pointer; user-select:none;
+  display:flex; align-items:center; justify-content:center;
+  flex:1;
+}
+
+.box-wrap {
+  position:relative;
+  width:160px; height:175px;
+  animation: boxFloat 2.8s ease-in-out infinite;
+}
+@keyframes boxFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+
+.box-body {
+  position:absolute; bottom:0; left:50%; transform:translateX(-50%);
+  width:148px; height:118px;
+  background: linear-gradient(135deg,#7a5c3e,#58402c);
+  border-radius:10px;
+  border:1px solid rgba(200,168,120,.28);
+  overflow:hidden;
+}
+.box-body::after {
+  content:'';position:absolute;left:50%;top:0;
+  transform:translateX(-50%);
+  width:5px; height:100%;
+  background:rgba(215,148,60,.8);
+}
+
+.box-lid {
+  position:absolute; top:14px; left:50%;
+  transform:translateX(-50%);
+  width:162px; height:42px;
+  background:linear-gradient(135deg,#8f6645,#67492f);
+  border-radius:10px;
+  border:1px solid rgba(200,168,120,.28);
+  transform-origin:50% 100%;
+  transition:transform .65s cubic-bezier(.34,1.56,.64,1), opacity .4s .2s;
+  overflow:hidden;
+}
+.box-lid::after {
+  content:'';position:absolute;left:0;top:50%;
+  transform:translateY(-50%);
+  width:100%; height:5px;
+  background:rgba(215,148,60,.8);
+}
+.box-lid.open {
+  transform:translateX(-50%) translateY(-115px) rotate(-8deg);
+  opacity:0;
+}
+
+/* Bow */
+.bow { position:absolute; top:-10px; left:50%; transform:translateX(-50%); width:56px; height:32px; }
+.bow-l,.bow-r {
+  position:absolute; top:0;
+  width:26px; height:18px;
+  background:#d04848; border-radius:50%;
+}
+.bow-l { left:0; transform:rotate(-28deg); transform-origin:right center; }
+.bow-r { right:0; transform:rotate(28deg); transform-origin:left center; }
+.bow-c {
+  position:absolute; width:12px; height:12px;
+  background:#aa2c2c; border-radius:50%;
+  top:50%; left:50%; transform:translate(-50%,-50%); z-index:1;
+}
+
+/* ════════════════════════════════════════
+   STONE VIEW
+════════════════════════════════════════ */
+#v-stone { opacity:0; pointer-events:none; }
+#v-stone.active { opacity:1; pointer-events:all; }
+
+#stone-bg {
+  position:absolute; inset:0;
+  transition:background 0.7s ease;
+}
+
+.stone-header {
+  position:absolute; top:56px;
+  left:0; right:0; padding:0 22px;
+  display:flex; justify-content:space-between; align-items:center;
+  z-index:10;
+}
+#stone-name {
+  font-size:16px; font-weight:500;
+  transition:color .4s;
+}
+#menu-btn {
+  border:none; background:transparent; cursor:pointer;
+  font-size:22px; opacity:.6; padding:4px; transition:color .4s;
+}
+
+#canvas-wrap {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%) translateY(-18px);
+  width:295px; height:295px;
+  z-index:5;
+  touch-action:none;
+}
+#canvas-wrap canvas { display:block; }
+
+#hint {
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,165px);
+  font-size:13px; z-index:10;
+  pointer-events:none;
+  transition:opacity .6s, color .4s;
+}
+
+/* ── Bottom ── */
+.bottom {
+  position:absolute; bottom:0; left:0; right:0;
+  padding:0 18px 38px;
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+  z-index:10;
+}
+
+.quote-card {
+  width:100%;
+  background:rgba(255,255,255,.72);
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+  border-radius:20px;
+  padding:16px 18px;
+  display:none;
+  box-shadow:0 4px 24px rgba(0,0,0,.12);
+}
+.quote-card.show {
+  display:block;
+  animation:slideUp .45s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes slideUp {
+  from{transform:translateY(18px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+.q-mark { font-size:20px; opacity:.45; margin-bottom:6px; }
+.q-text {
+  font-size:15px; line-height:1.68;
+  color:rgba(0,0,0,.78); white-space:pre-line;
+}
+
+.quote-btn {
+  padding:10px 22px; border:none; border-radius:50px;
+  font-size:14px; font-weight:500; font-family:inherit;
+  cursor:pointer; display:flex; align-items:center; gap:6px;
+  transition:background .3s, color .3s;
+}
+
+.stone-picker { display:flex; gap:10px; }
+.s-btn {
+  width:44px; height:44px; border-radius:50%;
+  border:2.5px solid transparent; cursor:pointer;
+  transition:transform .2s, border-color .3s;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);
+}
+.s-btn:hover { transform:scale(1.1); }
+.s-btn.on { border-color:rgba(255,255,255,.85); transform:scale(1.08); }
+
+/* ── Menu sheet ── */
+#menu-overlay {
+  position:absolute; inset:0;
+  background:rgba(0,0,0,.38); z-index:60;
+  display:none; align-items:flex-end;
+}
+#menu-overlay.show { display:flex; animation:fadeIn .2s; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.sheet {
+  width:100%; background:#f0f0f0;
+  border-radius:22px 22px 0 0; padding:6px 14px 36px;
+}
+.sheet-handle {
+  width:36px; height:4px; background:#c8c8c8;
+  border-radius:2px; margin:8px auto 14px;
+}
+.sheet-btn {
+  width:100%; padding:14px; border:none; border-radius:12px;
+  font-size:15px; font-family:inherit; cursor:pointer;
+  margin-bottom:8px;
+}
+</style>
+</head>
+<body>
+
+<div class="label">Design Preview</div>
+
+<div class="phone">
+  <div class="screen">
+    <div class="island"></div>
+
+    <!-- ── UNBOXING ── -->
+    <div class="view" id="v-unbox">
+      <div id="stars"></div>
+
+      <div class="unbox-title">
+        <h2>당신만의 워리스톤</h2>
+        <p>상자를 열어 확인해 보세요</p>
+      </div>
+
+      <div class="box-area" id="box-area">
+        <div class="box-wrap">
+          <div class="box-lid" id="box-lid">
+            <div class="bow">
+              <div class="bow-l"></div>
+              <div class="bow-r"></div>
+              <div class="bow-c"></div>
+            </div>
+          </div>
+          <div class="box-body"></div>
+        </div>
+      </div>
+
+      <div style="height:56px"></div>
+    </div>
+
+    <!-- ── STONE VIEW ── -->
+    <div class="view" id="v-stone">
+      <div id="stone-bg"></div>
+
+      <div class="stone-header">
+        <span id="stone-name">얼음 수정</span>
+        <button id="menu-btn" onclick="openMenu()">···</button>
+      </div>
+
+      <div id="canvas-wrap">
+        <canvas id="c"></canvas>
+      </div>
+
+      <div id="hint">문질러 보세요</div>
+
+      <div class="bottom">
+        <div class="quote-card" id="q-card">
+          <div class="q-mark">"</div>
+          <div class="q-text" id="q-text"></div>
+        </div>
+        <button class="quote-btn" id="q-btn" onclick="showQuote()">
+          💬 오늘의 문구
+        </button>
+        <div class="stone-picker">
+          <div class="s-btn on" style="background:linear-gradient(135deg,#cce8ff,#a2ccee)" onclick="pick(0)"></div>
+          <div class="s-btn"    style="background:linear-gradient(135deg,#f4bece,#e099b0)" onclick="pick(1)"></div>
+          <div class="s-btn"    style="background:linear-gradient(135deg,#28253a,#131020)" onclick="pick(2)"></div>
+          <div class="s-btn"    style="background:linear-gradient(135deg,#50b87a,#2e8050)" onclick="pick(3)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MENU SHEET ── -->
+    <div id="menu-overlay" onclick="closeMenu()">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-handle"></div>
+        <button class="sheet-btn" style="color:#d04040;background:#fff" onclick="reroll()">
+          🎲 새 돌 뽑기 (광고 보기)
+        </button>
+        <button class="sheet-btn" style="color:#222;background:#fff;font-weight:600" onclick="closeMenu()">
+          취소
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Three.js r128 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────
+const STONES = [
+  { name:'얼음 수정',
+    hex:0xC0DFFE, emissive:0x1a3d5c, metal:0.02, rough:0.78, polish:0.03,
+    transp:true,  opacity:0.86,
+    pColor:0x80C8FF,
+    rimHex:0x6688bb,
+    bg:'linear-gradient(155deg,#dff0ff,#b8d4ef)',
+    nameCol:'#3a7aaa', hintCol:'rgba(58,122,170,.4)',
+    btnBg:'rgba(58,122,170,.14)', btnCol:'#3a7aaa',
+    sparkMax:0.9 },
+  { name:'장미 수정',
+    hex:0xECB0C0, emissive:0x3d1020, metal:0.12, rough:0.78, polish:0.06,
+    transp:false, opacity:1,
+    pColor:0xFFAACC,
+    rimHex:0xdd8899,
+    bg:'linear-gradient(155deg,#fff0f3,#f4c8d8)',
+    nameCol:'#b84868', hintCol:'rgba(184,72,104,.4)',
+    btnBg:'rgba(184,72,104,.14)', btnCol:'#b84868',
+    sparkMax:0.65 },
+  { name:'흑요석',
+    hex:0x0e0c18, emissive:0x1e1040, metal:0.5, rough:0.78, polish:0.02,
+    transp:false, opacity:1,
+    pColor:0x9980ee,
+    rimHex:0x6644cc,
+    bg:'linear-gradient(155deg,#1c1828,#0e0c18)',
+    nameCol:'#a090d8', hintCol:'rgba(160,144,216,.4)',
+    btnBg:'rgba(160,144,216,.14)', btnCol:'#a090d8',
+    sparkMax:1.0 },
+  { name:'비취',
+    hex:0x2e8858, emissive:0x0a2818, metal:0.08, rough:0.78, polish:0.08,
+    transp:false, opacity:1,
+    pColor:0x50e090,
+    rimHex:0x38aa60,
+    bg:'linear-gradient(155deg,#ddf4e6,#b4e2c4)',
+    nameCol:'#237848', hintCol:'rgba(35,120,72,.4)',
+    btnBg:'rgba(35,120,72,.14)', btnCol:'#237848',
+    sparkMax:0.55 },
+];
+
+const QUOTES = [
+  '이 또한 지나가리라.',
+  '지금 이 순간,\n당신은 충분합니다.',
+  '숨을 들이쉬고.\n내쉬고.\n모든 것은 괜찮아질 거예요.',
+  '오늘 하루도 잘 버텼어요.\n그것으로 충분해요.',
+  '당신은 혼자가 아니에요.',
+  '마음이 무거울 때일수록\n더 부드럽게 대해주세요, 자신을.',
+  '모든 폭풍은 언젠가 끝납니다.',
+  '완벽하지 않아도 돼요.\n그냥 지금의 당신이면 충분해요.',
+  '걱정의 90%는\n일어나지 않습니다.',
+  '오늘의 나를\n믿어주세요.',
+  '지금 숨 쉬고 있는 것만으로도\n기적이에요.',
+  '작은 것에 감사하는 마음이\n큰 행복을 만들어요.',
+];
+
+// ── Stars ──────────────────────────────────────────────────────────────────
+(function createStars() {
+  const c = document.getElementById('stars');
+  for (let i = 0; i < 32; i++) {
+    const d = document.createElement('div');
+    const sz = [1.5,2,3][i % 3];
+    Object.assign(d.style, {
+      position:'absolute', borderRadius:'50%', background:'white',
+      width:sz+'px', height:sz+'px',
+      left:(Math.random()*100)+'%',
+      top:(Math.random()*68)+'%',
+      opacity: 0.08 + Math.random() * 0.35,
+    });
+    c.appendChild(d);
+  }
+})();
+
+// ── Phone scaling ──────────────────────────────────────────────────────────
+(function scalePhone() {
+  const el = document.querySelector('.phone');
+  const fit = () => {
+    const s = Math.min(1, (window.innerHeight - 48) / 900);
+    el.style.transform = `scale(${s})`;
+    el.style.transformOrigin = 'top center';
+  };
+  fit();
+  window.addEventListener('resize', fit);
+})();
+
+// ── Unboxing → Stone ──────────────────────────────────────────────────────
+document.getElementById('box-area').addEventListener('click', () => {
+  document.getElementById('box-lid').classList.add('open');
+  setTimeout(() => {
+    const u = document.getElementById('v-unbox');
+    const s = document.getElementById('v-stone');
+    u.style.opacity = '0';
+    s.style.opacity = '1';
+    s.classList.add('active');
+    setTimeout(() => u.style.display = 'none', 520);
+  }, 680);
+});
+
+// ── Three.js ──────────────────────────────────────────────────────────────
+const W = 295, H = 295;
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.getElementById('c'),
+  antialias: true,
+  alpha: true,
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W, H);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.25;
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 50);
+camera.position.set(0, 0, 5.5);
+
+// Stone mesh
+const stoneGeo = new THREE.SphereGeometry(1, 80, 80);
+const stoneMat = new THREE.MeshStandardMaterial({
+  color:    STONES[0].hex,
+  emissive: STONES[0].emissive,
+  emissiveIntensity: 0.12,
+  metalness: STONES[0].metal,
+  roughness: STONES[0].rough,
+  transparent: STONES[0].transp,
+  opacity:  STONES[0].opacity,
+});
+const stone = new THREE.Mesh(stoneGeo, stoneMat);
+stone.scale.set(1.36, 0.71, 1.09);
+scene.add(stone);
+
+// Lights
+const ambient = new THREE.AmbientLight(0xffffff, 0.22);
+scene.add(ambient);
+
+const key = new THREE.DirectionalLight(0xffffff, 2.0);
+key.position.set(3, 5, 4.5);
+scene.add(key);
+
+const fill = new THREE.DirectionalLight(0xffffff, 0.5);
+fill.position.set(-3, -1, 2);
+scene.add(fill);
+
+const rim = new THREE.DirectionalLight(STONES[0].rimHex, 0.8);
+rim.position.set(-3, -2, -4);
+scene.add(rim);
+
+// Moving point light for dynamic highlight
+const movingLight = new THREE.PointLight(0xffffff, 0.8, 10);
+movingLight.position.set(2, 2, 3);
+scene.add(movingLight);
+
+// ── Particles (ShaderMaterial for per-vertex alpha) ────────────────────────
+const N = 280;
+const pPos  = new Float32Array(N * 3);
+const pAlph = new Float32Array(N);     // 0→1, drives opacity in shader
+const pBase = new Float32Array(N * 3); // resting surface positions
+const pVel  = [];
+
+for (let i = 0; i < N; i++) {
+  const phi   = Math.random() * Math.PI * 2;
+  const ct    = 2 * Math.random() - 1;
+  const st    = Math.sqrt(1 - ct * ct);
+  pBase[i*3]   = pPos[i*3]   = st * Math.cos(phi) * 1.08 * 1.36;
+  pBase[i*3+1] = pPos[i*3+1] = ct              * 1.08 * 0.71;
+  pBase[i*3+2] = pPos[i*3+2] = st * Math.sin(phi) * 1.08 * 1.09;
+  pAlph[i] = 0;
+  pVel.push({ ax:0, ay:0, az:0, life:0, max:0, on:false });
+}
+
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,  3));
+pGeo.setAttribute('aAlpha',   new THREE.BufferAttribute(pAlph, 1));
+
+const pMat = new THREE.ShaderMaterial({
+  uniforms: { uColor: { value: new THREE.Color(STONES[0].pColor) } },
+  vertexShader: `
+    attribute float aAlpha;
+    varying float vA;
+    void main(){
+      vA = aAlpha;
+      gl_PointSize = 4.5;
+      gl_Position  = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`,
+  fragmentShader: `
+    uniform vec3 uColor;
+    varying float vA;
+    void main(){
+      float d = length(gl_PointCoord - vec2(.5)) * 2.0;
+      if(d > 1.0) discard;
+      float a = vA * (1.0 - smoothstep(.4,1.0,d));
+      gl_FragColor = vec4(uColor, a);
+    }`,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
+
+const particles = new THREE.Points(pGeo, pMat);
+scene.add(particles);
+
+function burst(count) {
+  let spawned = 0;
+  for (let i = 0; i < N && spawned < count; i++) {
+    if (!pVel[i].on) {
+      pVel[i].on   = true;
+      pVel[i].life = 0;
+      pVel[i].max  = 22 + Math.random() * 28;
+      const v = 0.012 + Math.random() * 0.022;
+      const phi = Math.random() * Math.PI * 2;
+      const th  = Math.random() * Math.PI;
+      pVel[i].ax = Math.sin(th)*Math.cos(phi)*v;
+      pVel[i].ay = Math.sin(th)*Math.sin(phi)*v;
+      pVel[i].az = Math.cos(th)*v;
+      spawned++;
+    }
+  }
+}
+
+// ── Stone state ───────────────────────────────────────────────────────────
+let idx        = 0;
+let rubAmt     = 0;   // 0–1
+let isPointer  = false;
+let lastX = 0, lastY = 0;
+let hintShown  = true;
+let idleT      = 0;
+
+function pick(i) {
+  idx = i;
+  const s = STONES[i];
+  stoneMat.color.set(s.hex);
+  stoneMat.emissive.set(s.emissive);
+  stoneMat.metalness  = s.metal;
+  stoneMat.roughness  = s.rough;
+  stoneMat.transparent = s.transp;
+  stoneMat.opacity    = s.opacity;
+  stoneMat.needsUpdate = true;
+
+  rim.color.set(s.rimHex);
+  pMat.uniforms.uColor.value.set(s.pColor);
+
+  document.getElementById('stone-bg').style.background   = s.bg;
+  document.getElementById('stone-name').style.color      = s.nameCol;
+  document.getElementById('stone-name').textContent      = s.name;
+  document.getElementById('menu-btn').style.color        = s.nameCol;
+  document.getElementById('hint').style.color            = s.hintCol;
+  const qb = document.getElementById('q-btn');
+  qb.style.background = s.btnBg;
+  qb.style.color      = s.btnCol;
+
+  document.querySelectorAll('.s-btn').forEach((b,j) => b.classList.toggle('on', j===i));
+  rubAmt = 0;
+  stoneMat.roughness = s.rough;
+}
+pick(0); // init
+
+// ── Input ─────────────────────────────────────────────────────────────────
+const cw = document.getElementById('canvas-wrap');
+
+function pDown(e) {
+  isPointer = true;
+  const p = e.touches ? e.touches[0] : e;
+  lastX = p.clientX; lastY = p.clientY;
+}
+function pMove(e) {
+  if (!isPointer) return;
+  e.preventDefault();
+  const p = e.touches ? e.touches[0] : e;
+  const dx = p.clientX - lastX;
+  const dy = p.clientY - lastY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  stone.rotation.y += dx * 0.014;
+  stone.rotation.x += dy * 0.014;
+
+  rubAmt = Math.min(rubAmt + dist * 0.0007, 1.0);
+  const s = STONES[idx];
+  const target = s.rough - rubAmt * (s.rough - s.polish);
+  stoneMat.roughness += (target - stoneMat.roughness) * 0.18;
+  stoneMat.emissiveIntensity = 0.08 + rubAmt * 0.2;
+
+  if (dist > 2) burst(Math.min(Math.ceil(dist * .45 * s.sparkMax), 8));
+
+  if (hintShown && rubAmt > 0.02) {
+    document.getElementById('hint').style.opacity = '0';
+    hintShown = false;
+  }
+
+  lastX = p.clientX; lastY = p.clientY;
+}
+function pUp() { isPointer = false; }
+
+cw.addEventListener('mousedown',  pDown);
+cw.addEventListener('touchstart', pDown, { passive:true });
+window.addEventListener('mousemove',  pMove);
+window.addEventListener('touchmove',  pMove, { passive:false });
+window.addEventListener('mouseup',    pUp);
+window.addEventListener('touchend',   pUp);
+
+// ── Animation loop ────────────────────────────────────────────────────────
+const posAttr  = pGeo.attributes.position;
+const alpAttr  = pGeo.attributes.aAlpha;
+
+function animate() {
+  requestAnimationFrame(animate);
+  idleT += 0.012;
+
+  // Float + idle rotate
+  stone.position.y = Math.sin(idleT) * 0.055;
+  if (!isPointer) stone.rotation.y += 0.0025;
+
+  // Moving highlight
+  movingLight.position.x = Math.sin(idleT * 0.7) * 2.5;
+  movingLight.position.y = Math.cos(idleT * 0.5) * 2;
+
+  // Particles
+  for (let i = 0; i < N; i++) {
+    if (pVel[i].on) {
+      pVel[i].life++;
+      const t = pVel[i].life / pVel[i].max;
+      posAttr.array[i*3]   = pBase[i*3]   + pVel[i].ax * pVel[i].life;
+      posAttr.array[i*3+1] = pBase[i*3+1] + pVel[i].ay * pVel[i].life;
+      posAttr.array[i*3+2] = pBase[i*3+2] + pVel[i].az * pVel[i].life;
+      alpAttr.array[i] = t < .25 ? t/.25 : 1 - (t-.25)/.75;
+      if (pVel[i].life >= pVel[i].max) {
+        pVel[i].on = false;
+        alpAttr.array[i] = 0;
+        posAttr.array[i*3]   = pBase[i*3];
+        posAttr.array[i*3+1] = pBase[i*3+1];
+        posAttr.array[i*3+2] = pBase[i*3+2];
+      }
+    } else {
+      // Ambient sparkle at high rub
+      const ambient = rubAmt * STONES[idx].sparkMax * 0.12;
+      alpAttr.array[i] += (ambient - alpAttr.array[i]) * 0.04;
+    }
+  }
+  // Rare ambient burst at high polish
+  if (rubAmt > 0.6 && Math.random() < rubAmt * 0.025) burst(1);
+
+  posAttr.needsUpdate = true;
+  alpAttr.needsUpdate = true;
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// ── Quote ─────────────────────────────────────────────────────────────────
+let qTimer = null;
+function showQuote() {
+  const t = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  document.getElementById('q-text').textContent = t;
+  const c = document.getElementById('q-card');
+  c.style.display = 'block';
+  c.classList.remove('show');
+  void c.offsetWidth;
+  c.classList.add('show');
+  c.style.opacity = '';
+  clearTimeout(qTimer);
+  qTimer = setTimeout(() => {
+    c.style.transition = 'opacity .4s';
+    c.style.opacity = '0';
+    setTimeout(() => { c.style.display='none'; c.style.opacity=''; c.style.transition=''; }, 420);
+  }, 5000);
+}
+
+// ── Menu ──────────────────────────────────────────────────────────────────
+function openMenu()  { document.getElementById('menu-overlay').classList.add('show'); }
+function closeMenu() { document.getElementById('menu-overlay').classList.remove('show'); }
+function reroll() {
+  closeMenu();
+  const sv = document.getElementById('v-stone');
+  const ub = document.getElementById('v-unbox');
+  sv.classList.remove('active');
+  sv.style.opacity = '0';
+  sv.style.pointerEvents = 'none';
+  ub.style.display = 'flex';
+  ub.style.opacity = '0';
+  document.getElementById('box-lid').classList.remove('open');
+  document.getElementById('box-area').style.pointerEvents = '';
+  rubAmt = 0;
+  setTimeout(() => ub.style.opacity = '1', 30);
+}
+</script>
+</body>
+</html>
