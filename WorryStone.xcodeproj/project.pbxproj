@@ -11,6 +11,7 @@
 		359642347F6245EC24474D6C /* StoneRubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9282CF86F33D3A0A71AB9D /* StoneRubView.swift */; };
 		37BEFA96E7DFCC07441D0CE6 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B8648700D79387FC8BE842 /* ContentView.swift */; };
 		66E7D591A8FF8ADF94AF4FBC /* Quotes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4306E1C70CBB0B05343CB1EA /* Quotes.swift */; };
+		6A20961472CF68DD8F3C56FC /* stone.usdz in Resources */ = {isa = PBXBuildFile; fileRef = C69AD91994428BB5357355B3 /* stone.usdz */; };
 		7382BC180786CD10073D526E /* QuoteCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CDFC08111A1E44621DDE915 /* QuoteCard.swift */; };
 		A4FBFA7BB525744A9084F2C7 /* WorryStoneApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35589D2A3AB13EF9A4FF00CD /* WorryStoneApp.swift */; };
 		E0EDBADCB2DA1F26F017DBA7 /* UnboxingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9098ADBDFAA4DF15ADF3D3F4 /* UnboxingView.swift */; };
@@ -28,6 +29,7 @@
 		6F3AB09E63525DE88D342ED5 /* StoneSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoneSceneView.swift; sourceTree = "<group>"; };
 		9098ADBDFAA4DF15ADF3D3F4 /* UnboxingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnboxingView.swift; sourceTree = "<group>"; };
 		A6B4C027DB8C77798A9394C4 /* WorryStone.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = WorryStone.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C69AD91994428BB5357355B3 /* stone.usdz */ = {isa = PBXFileReference; lastKnownFileType = file.usdz; path = stone.usdz; sourceTree = "<group>"; };
 		F1F87486C2FD3D47ED982ECC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FB9282CF86F33D3A0A71AB9D /* StoneRubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoneRubView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -38,6 +40,7 @@
 			children = (
 				35B8648700D79387FC8BE842 /* ContentView.swift */,
 				F1F87486C2FD3D47ED982ECC /* Info.plist */,
+				C69AD91994428BB5357355B3 /* stone.usdz */,
 				35589D2A3AB13EF9A4FF00CD /* WorryStoneApp.swift */,
 				6B244C9B9E5AF9E36823A5B1 /* Models */,
 				68484563D12BA4BD859D6D0C /* SceneKit */,
@@ -106,6 +109,7 @@
 			buildConfigurationList = 237A925FE40656833C075208 /* Build configuration list for PBXNativeTarget "WorryStone" */;
 			buildPhases = (
 				E9326B6F79101037E9825715 /* Sources */,
+				4CB31C8FAFEF947DCFD72DFC /* Resources */,
 			);
 			buildRules = (
 			);
@@ -147,6 +151,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4CB31C8FAFEF947DCFD72DFC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6A20961472CF68DD8F3C56FC /* stone.usdz in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		E9326B6F79101037E9825715 /* Sources */ = {

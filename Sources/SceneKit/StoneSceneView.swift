@@ -145,7 +145,7 @@ private final class StoneScene: SCNScene {
         let node = SCNNode()
         node.name = "stone"
 
-        if let url = Bundle.main.url(forResource: "Asset 1", withExtension: "usdz"),
+        if let url = Bundle.main.url(forResource: "stone", withExtension: "usdz"),
            let loaded = try? SCNScene(url: url, options: nil) {
             for child in loaded.rootNode.childNodes {
                 node.addChildNode(child)

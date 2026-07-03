@@ -13,7 +13,7 @@ targets:
       - path: Sources
     resources:
       - path: Assets.xcassets
-      - path: assets
+      - path: Sources/stone.usdz
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.worrystone.app
